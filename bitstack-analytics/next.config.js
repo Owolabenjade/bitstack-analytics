@@ -1,8 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    serverComponentsExternalPackages: ['@stacks/stacks-blockchain-api-types'],
-  },
+  serverExternalPackages: ['@stacks/stacks-blockchain-api-types'],
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
