@@ -2,7 +2,9 @@
 
 import { useState } from 'react';
 import { usePortfolio } from '@/hooks/usePortfolio';
-import { X, Plus } from 'lucide-react';
+import { useSmartContracts } from '@/hooks/useSmartContracts';
+import { useWallet } from '@/hooks/useWallet';
+import { X, Plus, Database } from 'lucide-react';
 
 interface CreatePortfolioFormProps {
   onClose: () => void;
@@ -15,8 +17,17 @@ export const CreatePortfolioForm = ({
 }: CreatePortfolioFormProps) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [isPublic, setIsPublic] = useState(false);
+  const [useBlockchain, setUseBlockchain] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
   const { createPortfolio, error } = usePortfolio();
+  const {
+    createPortfolio: createOnChain,
+    isLoading: contractLoading,
+    error: contractError,
+  } = useSmartContracts();
+  const { connected } = useWallet();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,6 +36,13 @@ export const CreatePortfolioForm = ({
 
     setIsSubmitting(true);
     try {
+      if (useBlockchain && connected) {
+        // Create portfolio on-chain
+        const result = await createOnChain(name, description, isPublic);
+        console.log('Portfolio created on-chain:', result);
+      }
+
+      // Always create locally as well
       createPortfolio(name, description);
       onSuccess?.();
       onClose();
@@ -34,6 +52,9 @@ export const CreatePortfolioForm = ({
       setIsSubmitting(false);
     }
   };
+
+  const currentError = error || contractError;
+  const isLoading = isSubmitting || contractLoading;
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -51,9 +72,9 @@ export const CreatePortfolioForm = ({
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
-          {error && (
+          {currentError && (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
-              {error}
+              {currentError}
             </div>
           )}
 
@@ -92,6 +113,59 @@ export const CreatePortfolioForm = ({
             />
           </div>
 
+          {connected && (
+            <div className="space-y-3">
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="useBlockchain"
+                  checked={useBlockchain}
+                  onChange={(e) => setUseBlockchain(e.target.checked)}
+                  className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                />
+                <label
+                  htmlFor="useBlockchain"
+                  className="ml-2 block text-sm text-gray-900"
+                >
+                  Store on Stacks blockchain
+                </label>
+              </div>
+
+              {useBlockchain && (
+                <div className="flex items-center">
+                  <input
+                    type="checkbox"
+                    id="isPublic"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                    className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
+                  />
+                  <label
+                    htmlFor="isPublic"
+                    className="ml-2 block text-sm text-gray-900"
+                  >
+                    Make portfolio public
+                  </label>
+                </div>
+              )}
+
+              {useBlockchain && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <div className="flex items-center space-x-2">
+                    <Database className="h-4 w-4 text-blue-500" />
+                    <span className="text-sm text-blue-700 font-medium">
+                      Blockchain Storage
+                    </span>
+                  </div>
+                  <p className="text-xs text-blue-600 mt-1">
+                    Portfolio metadata will be stored on Stacks blockchain for
+                    transparency and immutability.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="flex space-x-3 pt-4">
             <button
               type="button"
@@ -102,11 +176,11 @@ export const CreatePortfolioForm = ({
             </button>
             <button
               type="submit"
-              disabled={!name.trim() || isSubmitting}
+              disabled={!name.trim() || isLoading}
               className="flex-1 px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
             >
               <Plus className="h-4 w-4" />
-              <span>{isSubmitting ? 'Creating...' : 'Create Portfolio'}</span>
+              <span>{isLoading ? 'Creating...' : 'Create Portfolio'}</span>
             </button>
           </div>
         </form>

@@ -13,7 +13,9 @@
   "dependencies": {
     "@stacks/auth": "^7.1.0",
     "@stacks/connect": "^8.1.9",
+    "@stacks/encryption": "^7.1.0",
     "@stacks/network": "^7.0.2",
+    "@stacks/storage": "^7.1.0",
     "@stacks/transactions": "^7.1.0",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
@@ -27,6 +29,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@hirosystems/clarinet-sdk": "^3.3.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20.19.8",
     "@types/react": "^19",
