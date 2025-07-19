@@ -1,5 +1,4 @@
 import { AppConfig, UserSession, showConnect } from '@stacks/connect';
-import { StacksTestnet, StacksMainnet } from '@stacks/network';
 
 const appConfig = new AppConfig(['store_write', 'publish_data']);
 export const userSession = new UserSession({ appConfig });
@@ -25,7 +24,7 @@ export const connectOptions = {
 
 export const getStacksNetwork = () => {
   const network = process.env.NEXT_PUBLIC_STACKS_NETWORK || 'testnet';
-  return network === 'mainnet' ? new StacksMainnet() : new StacksTestnet();
+  return network;
 };
 
 export const connectWallet = () => {
@@ -51,7 +50,7 @@ export const getAddress = () => {
   if (userData) {
     const network = getStacksNetwork();
     return userData.profile.stxAddress[
-      network.version === 1 ? 'mainnet' : 'testnet'
+      network === 'mainnet' ? 'mainnet' : 'testnet'
     ];
   }
   return null;
