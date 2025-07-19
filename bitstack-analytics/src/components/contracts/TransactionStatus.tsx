@@ -1,12 +1,18 @@
 'use client';
 
 import { useSmartContracts } from '@/hooks/useSmartContracts';
-import { CheckCircle, Clock, XCircle, ExternalLink } from 'lucide-react';
+import { CheckCircle, Clock, XCircle } from 'lucide-react';
 
 export const TransactionStatus = () => {
   const { lastTransaction, clearTransaction } = useSmartContracts();
 
-  if (!lastTransaction) return null;
+  if (!lastTransaction) {
+    return (
+      <div className="text-center text-gray-500 text-sm">
+        No recent transactions
+      </div>
+    );
+  }
 
   const getStatusIcon = () => {
     switch (lastTransaction.status) {
@@ -47,40 +53,33 @@ export const TransactionStatus = () => {
     }
   };
 
-  const explorerUrl = `https://explorer.stacks.co/txid/${lastTransaction.txId}?chain=${
-    process.env.NEXT_PUBLIC_STACKS_NETWORK === 'mainnet' ? 'mainnet' : 'testnet'
-  }`;
-
   return (
     <div className={`border rounded-lg p-4 ${getStatusColor()}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           {getStatusIcon()}
           <div>
-            <p className="text-sm font-medium text-gray-900">{getStatusText()}</p>
+            <p className="text-sm font-medium text-gray-900">
+              {getStatusText()}
+            </p>
             <p className="text-xs text-gray-600">
-              TX: {lastTransaction.txId.slice(0, 8)}...{lastTransaction.txId.slice(-8)}
+              TX: {lastTransaction.txId.slice(0, 8)}...
+              {lastTransaction.txId.slice(-8)}
             </p>
             {lastTransaction.error && (
-              <p className="text-xs text-red-600 mt-1">{lastTransaction.error}</p>
+              <p className="text-xs text-red-600 mt-1">
+                {lastTransaction.error}
+              </p>
             )}
           </div>
         </div>
-        
+
         <div className="flex items-center space-x-2">
-          
-            href={explorerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 transition-colors"
-          >
-            <ExternalLink className="h-4 w-4" />
-          </a>
           <button
             onClick={clearTransaction}
-            className="text-gray-400 hover:text-gray-600 transition-colors text-xs"
+            className="text-gray-400 hover:text-gray-600 transition-colors text-xs px-2 py-1 rounded"
           >
-            ✕
+            Clear
           </button>
         </div>
       </div>
