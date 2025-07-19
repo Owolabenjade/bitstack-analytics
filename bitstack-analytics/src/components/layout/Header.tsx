@@ -2,11 +2,13 @@
 
 import Link from 'next/link';
 import { ConnectButton } from '@/components/wallet/ConnectButton';
+import { useWallet } from '@/hooks/useWallet';
 import { usePrices } from '@/hooks/usePrices';
 import { formatCurrency } from '@/lib/utils';
-import { BarChart3, TrendingUp, TrendingDown } from 'lucide-react';
+import { BarChart3, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 
 export const Header = () => {
+  const { connected } = useWallet();
   const { prices } = usePrices();
   const bitcoin = prices['bitcoin'];
   const stacks = prices['stacks'];
@@ -101,10 +103,74 @@ export const Header = () => {
             >
               Analytics
             </Link>
+            {connected && (
+              <Link
+                href="/wallet"
+                className="flex items-center space-x-1 text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <Activity className="h-4 w-4" />
+                <span>Wallet</span>
+              </Link>
+            )}
           </nav>
 
           {/* Wallet Connection */}
           <ConnectButton />
+        </div>
+
+        {/* Mobile Price Ticker */}
+        <div className="lg:hidden pb-3 overflow-x-auto">
+          <div className="flex items-center space-x-4 text-sm min-w-max">
+            {bitcoin && (
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600">BTC</span>
+                <span className="font-medium">
+                  {formatCurrency(bitcoin.current_price)}
+                </span>
+                <div
+                  className={`flex items-center space-x-1 ${
+                    bitcoin.price_change_percentage_24h >= 0
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {bitcoin.price_change_percentage_24h >= 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
+                  <span className="text-xs">
+                    {Math.abs(bitcoin.price_change_percentage_24h).toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            )}
+
+            {stacks && (
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600">STX</span>
+                <span className="font-medium">
+                  {formatCurrency(stacks.current_price)}
+                </span>
+                <div
+                  className={`flex items-center space-x-1 ${
+                    stacks.price_change_percentage_24h >= 0
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  }`}
+                >
+                  {stacks.price_change_percentage_24h >= 0 ? (
+                    <TrendingUp className="h-3 w-3" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3" />
+                  )}
+                  <span className="text-xs">
+                    {Math.abs(stacks.price_change_percentage_24h).toFixed(2)}%
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </header>

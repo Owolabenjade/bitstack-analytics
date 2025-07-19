@@ -78,6 +78,42 @@ export const useWallet = () => {
     }
   };
 
+  // Enhanced methods for Commit 7
+  const getBalance = async () => {
+    if (!address) return null;
+
+    try {
+      const apiUrl =
+        process.env.NEXT_PUBLIC_STACKS_API_URL || 'https://api.testnet.hiro.so';
+      const response = await fetch(
+        `${apiUrl}/extended/v1/address/${address}/balances`
+      );
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch balance: ${response.status}`);
+      }
+
+      const data = await response.json();
+      return {
+        stx: {
+          balance: parseInt(data.stx.balance),
+          locked: parseInt(data.stx.locked),
+          totalSent: parseInt(data.stx.total_sent),
+          totalReceived: parseInt(data.stx.total_received),
+        },
+        fungibleTokens: data.fungible_tokens,
+        nonFungibleTokens: data.non_fungible_tokens,
+      };
+    } catch (err) {
+      console.error('Error fetching balance:', err);
+      return null;
+    }
+  };
+
+  const getNetwork = () => {
+    return process.env.NEXT_PUBLIC_STACKS_NETWORK || 'testnet';
+  };
+
   return {
     connected,
     address,
@@ -86,5 +122,7 @@ export const useWallet = () => {
     error,
     connect,
     disconnect,
+    getBalance,
+    getNetwork,
   };
 };
