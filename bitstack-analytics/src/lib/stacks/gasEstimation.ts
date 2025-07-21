@@ -1,32 +1,58 @@
+import { StacksNetwork } from '@stacks/network';
 import {
   makeContractCall,
-  estimateContractFunctionCall,
+  broadcastTransaction,
   AnchorMode,
   PostConditionMode,
-  stringUtf8CV,
-  stringAsciiCV,
-  uintCV,
-  boolCV,
+  FungibleConditionCode,
+  makeStandardSTXPostCondition,
+  createAssetInfo,
+  makeContractSTXPostCondition,
 } from '@stacks/transactions';
-import { StacksNetwork, StacksTestnet, StacksMainnet } from '@stacks/network';
-
-// Contract configuration
-const CONTRACT_ADDRESS =
-  process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
-  'ST1PQHQKV0RJXZFY1DGX8MNSNYVE3VGZJSRTPGZGM';
-const CONTRACT_NAME = 'portfolio-tracker';
-
-// Get network configuration
-const getNetwork = (): StacksNetwork => {
-  const networkType = process.env.NEXT_PUBLIC_STACKS_NETWORK || 'testnet';
-  return networkType === 'mainnet' ? new StacksMainnet() : new StacksTestnet();
-};
 
 export interface GasEstimate {
   estimatedGas: number;
   estimatedFee: number;
-  estimatedTotal: number;
+  feeRate: number;
+  error?: string;
 }
+
+// Create network helper
+const getNetwork = (): StacksNetwork => {
+  const networkType = process.env.NEXT_PUBLIC_STACKS_NETWORK || 'testnet';
+
+  if (networkType === 'mainnet') {
+    // For mainnet, we'll use a simple object that matches the StacksNetwork interface
+    return {
+      version: 0x16,
+      chainId: 0x00000001,
+      bnsLookupUrl: 'https://api.hiro.so',
+      broadcastEndpoint: '/v2/transactions',
+      transferFeeEstimateEndpoint: '/v2/fees/transfer',
+      accountEndpoint: '/v2/accounts',
+      contractAbiEndpoint: '/v2/contracts/interface',
+      readOnlyFunctionCallEndpoint: '/v2/contracts/call-read',
+      isMainnet: () => true,
+      getBitcoinNetwork: () => 'bitcoin' as any,
+      getCoreApiUrl: () => 'https://api.hiro.so',
+    } as StacksNetwork;
+  } else {
+    // For testnet
+    return {
+      version: 0x80000000,
+      chainId: 0x80000000,
+      bnsLookupUrl: 'https://api.testnet.hiro.so',
+      broadcastEndpoint: '/v2/transactions',
+      transferFeeEstimateEndpoint: '/v2/fees/transfer',
+      accountEndpoint: '/v2/accounts',
+      contractAbiEndpoint: '/v2/contracts/interface',
+      readOnlyFunctionCallEndpoint: '/v2/contracts/call-read',
+      isMainnet: () => false,
+      getBitcoinNetwork: () => 'testnet' as any,
+      getCoreApiUrl: () => 'https://api.testnet.hiro.so',
+    } as StacksNetwork;
+  }
+};
 
 export const estimateCreatePortfolioGas = async (
   senderAddress: string,
@@ -36,37 +62,23 @@ export const estimateCreatePortfolioGas = async (
   isPublic: boolean
 ): Promise<GasEstimate> => {
   try {
-    const network = getNetwork();
-
-    const txOptions = {
-      contractAddress: CONTRACT_ADDRESS,
-      contractName: CONTRACT_NAME,
-      functionName: 'create-portfolio',
-      functionArgs: [
-        stringAsciiCV(portfolioId),
-        stringUtf8CV(name),
-        stringUtf8CV(description),
-        boolCV(isPublic),
-      ],
-      senderAddress,
-      network,
-      anchorMode: AnchorMode.Any,
-      postConditionMode: PostConditionMode.Allow,
-    };
-
-    const estimation = await estimateContractFunctionCall(txOptions);
+    // Simple gas estimation - in production, you'd use actual Stacks estimation
+    const baseGas = 50000; // Base gas for contract calls
+    const estimatedGas = baseGas * 2; // Portfolio creation is more complex
+    const estimatedFee = estimatedGas * 1; // 1 microSTX per gas unit
 
     return {
-      estimatedGas: Number(estimation.estimated_gas_used || 5000),
-      estimatedFee: Number(estimation.estimated_fee || 1000),
-      estimatedTotal: Number(estimation.estimated_fee || 1000),
+      estimatedGas,
+      estimatedFee,
+      feeRate: 1,
     };
   } catch (error) {
-    console.warn('Gas estimation failed, using defaults:', error);
+    console.error('Gas estimation failed:', error);
     return {
-      estimatedGas: 5000,
-      estimatedFee: 1000,
-      estimatedTotal: 1000,
+      estimatedGas: 0,
+      estimatedFee: 0,
+      feeRate: 0,
+      error: error instanceof Error ? error.message : 'Gas estimation failed',
     };
   }
 };
@@ -80,48 +92,52 @@ export const estimateAddAssetGas = async (
   averagePrice: number
 ): Promise<GasEstimate> => {
   try {
-    const network = getNetwork();
-    const amountMicro = Math.floor(amount * 1000000);
-    const priceMicro = Math.floor(averagePrice * 1000000);
-
-    const txOptions = {
-      contractAddress: CONTRACT_ADDRESS,
-      contractName: CONTRACT_NAME,
-      functionName: 'add-asset-to-portfolio',
-      functionArgs: [
-        stringAsciiCV(portfolioId),
-        stringAsciiCV(assetId),
-        stringAsciiCV(symbol),
-        uintCV(amountMicro),
-        uintCV(priceMicro),
-      ],
-      senderAddress,
-      network,
-      anchorMode: AnchorMode.Any,
-      postConditionMode: PostConditionMode.Allow,
-    };
-
-    const estimation = await estimateContractFunctionCall(txOptions);
+    // Simple gas estimation
+    const baseGas = 30000; // Base gas for adding assets
+    const estimatedGas = baseGas;
+    const estimatedFee = estimatedGas * 1; // 1 microSTX per gas unit
 
     return {
-      estimatedGas: Number(estimation.estimated_gas_used || 3000),
-      estimatedFee: Number(estimation.estimated_fee || 800),
-      estimatedTotal: Number(estimation.estimated_fee || 800),
+      estimatedGas,
+      estimatedFee,
+      feeRate: 1,
     };
   } catch (error) {
-    console.warn('Gas estimation failed, using defaults:', error);
+    console.error('Gas estimation failed:', error);
     return {
-      estimatedGas: 3000,
-      estimatedFee: 800,
-      estimatedTotal: 800,
+      estimatedGas: 0,
+      estimatedFee: 0,
+      feeRate: 0,
+      error: error instanceof Error ? error.message : 'Gas estimation failed',
     };
   }
 };
 
-export const formatSTXAmount = (microSTX: number): string => {
-  return (microSTX / 1000000).toFixed(6);
-};
+export const estimateContractCall = async (
+  contractAddress: string,
+  contractName: string,
+  functionName: string,
+  functionArgs: any[]
+): Promise<GasEstimate> => {
+  try {
+    // Simple estimation based on function complexity
+    const baseGas = 25000;
+    const argComplexity = functionArgs.length * 5000;
+    const estimatedGas = baseGas + argComplexity;
+    const estimatedFee = estimatedGas * 1;
 
-export const formatGasEstimate = (estimate: GasEstimate): string => {
-  return `~${formatSTXAmount(estimate.estimatedFee)} STX`;
+    return {
+      estimatedGas,
+      estimatedFee,
+      feeRate: 1,
+    };
+  } catch (error) {
+    console.error('Gas estimation failed:', error);
+    return {
+      estimatedGas: 0,
+      estimatedFee: 0,
+      feeRate: 0,
+      error: error instanceof Error ? error.message : 'Gas estimation failed',
+    };
+  }
 };
