@@ -26,6 +26,9 @@ export const useTransactionHistory = () => {
 
   const limit = 20;
 
+  /* ─────────────────────────────────────────────
+   *  Shared fetch helper (used by loadMore/refetch)
+   * ──────────────────────────────────────────── */
   const fetchTransactions = useCallback(
     async (reset = false) => {
       if (!address) return;
@@ -37,10 +40,11 @@ export const useTransactionHistory = () => {
         const apiUrl =
           process.env.NEXT_PUBLIC_STACKS_API_URL ||
           'https://api.testnet.hiro.so';
+
         const currentOffset = reset ? 0 : offset;
 
         const response = await fetch(
-          `${apiUrl}/extended/v1/address/${address}/transactions?limit=${limit}&offset=${currentOffset}`
+          `${apiUrl}/extended/v1/address/${address}/transactions?limit=${limit}&offset=${currentOffset}`,
         );
 
         if (!response.ok) {
@@ -53,23 +57,68 @@ export const useTransactionHistory = () => {
           setTransactions(data.results);
           setOffset(limit);
         } else {
-          setTransactions((prev) => [...prev, ...data.results]);
-          setOffset((prev) => prev + limit);
+          setTransactions(prev => [...prev, ...data.results]);
+          setOffset(prev => prev + limit);
         }
 
         setHasMore(data.results.length === limit);
       } catch (err) {
         console.error('Error fetching transaction history:', err);
         setError(
-          err instanceof Error ? err.message : 'Failed to fetch transactions'
+          err instanceof Error ? err.message : 'Failed to fetch transactions',
         );
       } finally {
         setLoading(false);
       }
     },
-    [address, offset, limit]
+    [address, offset, limit],
   );
 
+  /* ─────────────────────────────────────────────
+   *  Initial fetch / refetch on address change
+   *  (No dependency on fetchTransactions → no loop)
+   * ──────────────────────────────────────────── */
+  useEffect(() => {
+    if (!address) return;
+
+    setOffset(0);
+    setHasMore(true);
+
+    (async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const apiUrl =
+          process.env.NEXT_PUBLIC_STACKS_API_URL ||
+          'https://api.testnet.hiro.so';
+
+        const response = await fetch(
+          `${apiUrl}/extended/v1/address/${address}/transactions?limit=${limit}&offset=0`,
+        );
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch transactions: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setTransactions(data.results);
+        setOffset(limit);
+        setHasMore(data.results.length === limit);
+      } catch (err) {
+        console.error('Error fetching transaction history:', err);
+        setError(
+          err instanceof Error ? err.message : 'Failed to fetch transactions',
+        );
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, [address, limit]); // fetchTransactions intentionally omitted
+
+  /* ─────────────────────────────────────────────
+   *  Helpers exposed to the UI
+   * ──────────────────────────────────────────── */
   const refetch = useCallback(async () => {
     setOffset(0);
     setHasMore(true);
@@ -81,21 +130,12 @@ export const useTransactionHistory = () => {
     await fetchTransactions(false);
   }, [hasMore, loading, fetchTransactions]);
 
-  // Re-fetch when the connected address changes
-  useEffect(() => {
-    if (address) {
-      setOffset(0);
-      setHasMore(true);
-      fetchTransactions(true);
-    }
-  }, [address]); // fetchTransactions removed from dependencies
-
   return {
     transactions,
     loading,
     error,
-    refetch,
     hasMore,
     loadMore,
+    refetch,
   };
 };

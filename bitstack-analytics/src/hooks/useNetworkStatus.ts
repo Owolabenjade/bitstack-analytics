@@ -24,8 +24,11 @@ interface NavigatorWithConnection extends Navigator {
 }
 
 export const useNetworkStatus = () => {
+  // Guard against SSR: only touch window/navigator on the client
+  const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
-    isOnline: navigator.onLine,
+    isOnline: isBrowser ? navigator.onLine : true,
     connectionType: 'unknown',
     effectiveType: 'unknown',
     downlink: 0,
@@ -35,31 +38,33 @@ export const useNetworkStatus = () => {
   const [isSlowConnection, setIsSlowConnection] = useState(false);
 
   const updateNetworkStatus = useCallback(() => {
-    const navigator = window.navigator as NavigatorWithConnection;
+    if (!isBrowser) return;
+
+    const nav = window.navigator as NavigatorWithConnection;
     const connection =
-      navigator.connection ||
-      navigator.mozConnection ||
-      navigator.webkitConnection;
+      nav.connection || nav.mozConnection || nav.webkitConnection;
 
     const status: NetworkStatus = {
-      isOnline: navigator.onLine,
-      connectionType: connection?.type || 'unknown',
-      effectiveType: connection?.effectiveType || 'unknown',
-      downlink: connection?.downlink || 0,
-      rtt: connection?.rtt || 0,
+      isOnline: nav.onLine,
+      connectionType: connection?.type ?? 'unknown',
+      effectiveType: connection?.effectiveType ?? 'unknown',
+      downlink: connection?.downlink ?? 0,
+      rtt: connection?.rtt ?? 0,
     };
 
     setNetworkStatus(status);
 
-    // Detect slow connections
-    const isSlow =
+    // flag slow links
+    const slow =
       status.effectiveType === 'slow-2g' ||
       status.effectiveType === '2g' ||
       (status.downlink > 0 && status.downlink < 1.5);
-    setIsSlowConnection(isSlow);
-  }, []);
+    setIsSlowConnection(slow);
+  }, [isBrowser]);
 
   useEffect(() => {
+    if (!isBrowser) return;
+
     updateNetworkStatus();
 
     const handleOnline = () => updateNetworkStatus();
@@ -70,18 +75,14 @@ export const useNetworkStatus = () => {
     window.addEventListener('offline', handleOffline);
 
     const connection = (navigator as NavigatorWithConnection).connection;
-    if (connection) {
-      connection.addEventListener('change', handleConnectionChange);
-    }
+    connection?.addEventListener?.('change', handleConnectionChange);
 
     return () => {
       window.removeEventListener('online', handleOnline);
       window.removeEventListener('offline', handleOffline);
-      if (connection) {
-        connection.removeEventListener('change', handleConnectionChange);
-      }
+      connection?.removeEventListener?.('change', handleConnectionChange);
     };
-  }, [updateNetworkStatus]);
+  }, [updateNetworkStatus, isBrowser]);
 
   return {
     ...networkStatus,

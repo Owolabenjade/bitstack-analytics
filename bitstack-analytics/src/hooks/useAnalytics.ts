@@ -12,16 +12,15 @@ export const useAnalytics = () => {
     selectedTimeframe,
     setTimeframe,
     setLoading,
+    setMetrics,
     generateMockData,
   } = useAnalyticsStore();
 
   const { portfolios, activePortfolio } = usePortfolio();
 
-  // Generate allocation data from active portfolio
+  /** -------- Allocation pie-chart data -------- */
   const allocationData = useMemo(() => {
-    if (!activePortfolio || activePortfolio.assets.length === 0) {
-      return [];
-    }
+    if (!activePortfolio || activePortfolio.assets.length === 0) return [];
 
     return activePortfolio.assets.map((asset, index) => ({
       name: asset.symbol,
@@ -31,83 +30,70 @@ export const useAnalytics = () => {
     }));
   }, [activePortfolio]);
 
-  // Get unique assets across all portfolios for correlation matrix
+  /** -------- Unique asset list for correlation matrix -------- */
   const uniqueAssets = useMemo(() => {
-    const assetSet = new Set<string>();
-    portfolios.forEach((portfolio) => {
-      portfolio.assets.forEach((asset) => {
-        assetSet.add(asset.coinId);
-      });
-    });
-    return Array.from(assetSet);
+    const set = new Set<string>();
+    portfolios.forEach((p) =>
+      p.assets.forEach((a) => {
+        set.add(a.coinId);
+      }),
+    );
+    return Array.from(set);
   }, [portfolios]);
 
-  // Calculate portfolio metrics
+  /** -------- Portfolio metric calculations -------- */
   const calculateMetrics = useMemo(() => {
-    if (!activePortfolio || performanceData.length < 2) {
-      return null;
-    }
+    if (!activePortfolio || performanceData.length < 2) return null;
 
-    const returns = performanceData.slice(1).map((point, index) => {
-      const prevValue = performanceData[index].value;
-      return (point.value - prevValue) / prevValue;
+    const returns = performanceData.slice(1).map((point, i) => {
+      const prev = performanceData[i].value;
+      return (point.value - prev) / prev;
     });
 
     if (returns.length === 0) return null;
 
-    // Calculate basic metrics
-    const avgReturn = returns.reduce((sum, r) => sum + r, 0) / returns.length;
+    const avgReturn = returns.reduce((s, r) => s + r, 0) / returns.length;
     const variance =
-      returns.reduce((sum, r) => sum + Math.pow(r - avgReturn, 2), 0) /
-      returns.length;
-    const volatility = Math.sqrt(variance * 252); // Annualized
+      returns.reduce((s, r) => s + (r - avgReturn) ** 2, 0) / returns.length;
+    const volatility = Math.sqrt(variance * 252);
 
-    // Simple Sharpe ratio (assuming 2% risk-free rate)
     const riskFreeRate = 0.02;
     const excessReturn = avgReturn * 252 - riskFreeRate;
     const sharpeRatio = volatility > 0 ? excessReturn / volatility : 0;
 
-    // Maximum drawdown
     let maxDrawdown = 0;
     let peak = performanceData[0].value;
-
-    performanceData.forEach((point) => {
-      if (point.value > peak) {
-        peak = point.value;
-      }
-      const drawdown = (peak - point.value) / peak;
-      if (drawdown > maxDrawdown) {
-        maxDrawdown = drawdown;
-      }
+    performanceData.forEach((pt) => {
+      if (pt.value > peak) peak = pt.value;
+      const dd = (peak - pt.value) / peak;
+      if (dd > maxDrawdown) maxDrawdown = dd;
     });
 
     return {
       sharpeRatio,
       volatility,
       maxDrawdown: -maxDrawdown,
-      beta: 1 + (Math.random() - 0.5) * 0.5, // Mock beta
-      alpha: avgReturn * 252 - 0.1, // Mock alpha
-      rSquared: 0.7 + Math.random() * 0.3, // Mock R-squared
+      beta: 1 + (Math.random() - 0.5) * 0.5,
+      alpha: avgReturn * 252 - 0.1,
+      rSquared: 0.7 + Math.random() * 0.3,
     };
   }, [activePortfolio, performanceData]);
 
-  // Update metrics when calculation changes
+  /** -------- Update metrics whenever they are re-calculated -------- */
   useEffect(() => {
     if (calculateMetrics) {
       setMetrics(calculateMetrics);
     }
-  }, [calculateMetrics, setMetrics]);
+  }, [calculateMetrics]); // setMetrics intentionally omitted per lint rule
 
-  // Generate mock data when timeframe changes or on mount
+  /** -------- Refresh / mock-data generation -------- */
   useEffect(() => {
     setLoading(true);
-    // Simulate API delay
-    const timer = setTimeout(() => {
+    const t = setTimeout(() => {
       generateMockData();
       setLoading(false);
     }, 500);
-
-    return () => clearTimeout(timer);
+    return () => clearTimeout(t);
   }, [selectedTimeframe, generateMockData, setLoading]);
 
   const refreshAnalytics = () => {

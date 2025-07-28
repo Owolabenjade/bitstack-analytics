@@ -4,8 +4,11 @@ import {
   PortfolioAsset,
 } from '@/stores/portfolioStore';
 import { usePrices } from '@/hooks/usePrices';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 
+/* ────────────────────────────── *
+ *  Types used only in this hook
+ * ────────────────────────────── */
 export interface PortfolioMetrics {
   totalValue: number;
   totalCost: number;
@@ -26,6 +29,77 @@ export interface AssetWithMetrics extends PortfolioAsset {
   dayChangePercentage: number;
 }
 
+/* ────────────────────────────── *
+ *  Pure helpers – no React deps
+ * ────────────────────────────── */
+const calculateAssetMetricsHelper = (
+  asset: PortfolioAsset,
+  prices: Record<string, any>,
+): AssetWithMetrics => {
+  const priceData = prices[asset.coinId];
+  const currentPrice = priceData?.current_price ?? 0;
+  const currentValue = asset.amount * currentPrice;
+  const cost = asset.amount * asset.averagePrice;
+  const pnl = currentValue - cost;
+  const pnlPercentage = cost > 0 ? (pnl / cost) * 100 : 0;
+  const dayChangePct = priceData?.price_change_percentage_24h ?? 0;
+  const dayChangeVal = currentValue * (dayChangePct / 100);
+
+  return {
+    ...asset,
+    currentPrice,
+    currentValue,
+    cost,
+    pnl,
+    pnlPercentage,
+    allocation: 0, // will be filled later
+    dayChange: dayChangeVal,
+    dayChangePercentage: dayChangePct,
+  };
+};
+
+const calculatePortfolioMetricsHelper = (
+  portfolio: Portfolio,
+  calcAssetMetrics: (asset: PortfolioAsset) => AssetWithMetrics,
+): PortfolioMetrics => {
+  if (!portfolio.assets.length) {
+    return {
+      totalValue: 0,
+      totalCost: 0,
+      totalPnL: 0,
+      totalPnLPercentage: 0,
+      dayChange: 0,
+      dayChangePercentage: 0,
+    };
+  }
+
+  const assetsWithMetrics = portfolio.assets.map(calcAssetMetrics);
+
+  const totalValue = assetsWithMetrics.reduce(
+    (sum, a) => sum + a.currentValue,
+    0,
+  );
+  const totalCost = assetsWithMetrics.reduce((sum, a) => sum + a.cost, 0);
+  const totalPnL = totalValue - totalCost;
+  const totalPnLPercentage = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
+
+  const dayChange = assetsWithMetrics.reduce((sum, a) => sum + a.dayChange, 0);
+  const dayChangePercentage =
+    totalValue > 0 ? (dayChange / (totalValue - dayChange)) * 100 : 0;
+
+  return {
+    totalValue,
+    totalCost,
+    totalPnL,
+    totalPnLPercentage,
+    dayChange,
+    dayChangePercentage,
+  };
+};
+
+/* ────────────────────────────── *
+ *  Main hook
+ * ────────────────────────────── */
 export const usePortfolio = () => {
   const {
     portfolios,
@@ -44,110 +118,63 @@ export const usePortfolio = () => {
 
   const { prices } = usePrices();
 
-  const activePortfolio = useMemo(() => {
-    return portfolios.find((p) => p.id === activePortfolioId) || null;
-  }, [portfolios, activePortfolioId]);
+  /* Active portfolio reference */
+  const activePortfolio = useMemo(
+    () => portfolios.find(p => p.id === activePortfolioId) ?? null,
+    [portfolios, activePortfolioId],
+  );
 
-  const calculateAssetMetrics = (asset: PortfolioAsset): AssetWithMetrics => {
-    const priceData = prices[asset.coinId];
-    const currentPrice = priceData?.current_price || 0;
-    const currentValue = asset.amount * currentPrice;
-    const cost = asset.amount * asset.averagePrice;
-    const pnl = currentValue - cost;
-    const pnlPercentage = cost > 0 ? (pnl / cost) * 100 : 0;
-    const dayChange = priceData?.price_change_percentage_24h || 0;
-    const dayChangeValue = currentValue * (dayChange / 100);
+  /* Memoised wrappers around the pure helpers */
+  const calculateAssetMetrics = useCallback(
+    (asset: PortfolioAsset): AssetWithMetrics =>
+      calculateAssetMetricsHelper(asset, prices),
+    [prices],
+  );
 
-    return {
-      ...asset,
-      currentPrice,
-      currentValue,
-      cost,
-      pnl,
-      pnlPercentage,
-      allocation: 0, // Will be calculated in portfolio metrics
-      dayChange: dayChangeValue,
-      dayChangePercentage: dayChange,
-    };
-  };
+  const calculatePortfolioMetrics = useCallback(
+    (portfolio: Portfolio): PortfolioMetrics =>
+      calculatePortfolioMetricsHelper(portfolio, calculateAssetMetrics),
+    [calculateAssetMetrics],
+  );
 
-  const calculatePortfolioMetrics = (
-    portfolio: Portfolio
-  ): PortfolioMetrics => {
-    if (!portfolio.assets.length) {
+  const getPortfolioWithMetrics = useCallback(
+    (portfolio: Portfolio) => {
+      const metrics = calculatePortfolioMetrics(portfolio);
+
+      const assetsWithMetrics = portfolio.assets.map(asset => {
+        const assetMetrics = calculateAssetMetrics(asset);
+        return {
+          ...assetMetrics,
+          allocation:
+            metrics.totalValue > 0
+              ? (assetMetrics.currentValue / metrics.totalValue) * 100
+              : 0,
+        };
+      });
+
       return {
-        totalValue: 0,
-        totalCost: 0,
-        totalPnL: 0,
-        totalPnLPercentage: 0,
-        dayChange: 0,
-        dayChangePercentage: 0,
+        ...portfolio,
+        assets: assetsWithMetrics,
+        metrics,
       };
-    }
+    },
+    [calculateAssetMetrics, calculatePortfolioMetrics],
+  );
 
-    const assetsWithMetrics = portfolio.assets.map(calculateAssetMetrics);
-    const totalValue = assetsWithMetrics.reduce(
-      (sum, asset) => sum + asset.currentValue,
-      0
-    );
-    const totalCost = assetsWithMetrics.reduce(
-      (sum, asset) => sum + asset.cost,
-      0
-    );
-    const totalPnL = totalValue - totalCost;
-    const totalPnLPercentage = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
-    const dayChange = assetsWithMetrics.reduce(
-      (sum, asset) => sum + asset.dayChange,
-      0
-    );
-    const dayChangePercentage =
-      totalValue > 0 ? (dayChange / (totalValue - dayChange)) * 100 : 0;
+  /* ── Derived data ── */
+  const activePortfolioWithMetrics = useMemo(
+    () => (activePortfolio ? getPortfolioWithMetrics(activePortfolio) : null),
+    [activePortfolio, getPortfolioWithMetrics],
+  );
 
-    return {
-      totalValue,
-      totalCost,
-      totalPnL,
-      totalPnLPercentage,
-      dayChange,
-      dayChangePercentage,
-    };
-  };
+  const portfoliosWithMetrics = useMemo(
+    () => portfolios.map(getPortfolioWithMetrics),
+    [portfolios, getPortfolioWithMetrics],
+  );
 
-  // Move getPortfolioWithMetrics outside of the component
-  const getPortfolioWithMetrics = (portfolio: Portfolio) => {
-    const metrics = calculatePortfolioMetrics(portfolio);
-    const assetsWithMetrics = portfolio.assets.map((asset) => {
-      const assetMetrics = calculateAssetMetrics(asset);
-      return {
-        ...assetMetrics,
-        allocation:
-          metrics.totalValue > 0
-            ? (assetMetrics.currentValue / metrics.totalValue) * 100
-            : 0,
-      };
-    });
-
-    return {
-      ...portfolio,
-      assets: assetsWithMetrics,
-      metrics,
-    };
-  };
-
-  const activePortfolioWithMetrics = useMemo(() => {
-    return activePortfolio ? getPortfolioWithMetrics(activePortfolio) : null;
-  }, [activePortfolio, prices]);
-
-  const portfoliosWithMetrics = useMemo(() => {
-    return portfolios.map(getPortfolioWithMetrics);
-  }, [portfolios, prices]);
-
-  const createNewPortfolio = (name: string, description: string = '') => {
-    if (!name.trim()) {
-      setError('Portfolio name is required');
-      return;
-    }
-
+  /* ── CRUD helpers ── */
+  const createNewPortfolio = (name: string, description = '') => {
+    if (!name.trim()) return setError('Portfolio name is required');
     setError(null);
     createPortfolio(name.trim(), description.trim());
   };
@@ -158,17 +185,10 @@ export const usePortfolio = () => {
     symbol: string,
     name: string,
     amount: number,
-    averagePrice: number
+    averagePrice: number,
   ) => {
-    if (amount <= 0) {
-      setError('Amount must be greater than 0');
-      return;
-    }
-
-    if (averagePrice <= 0) {
-      setError('Price must be greater than 0');
-      return;
-    }
+    if (amount <= 0) return setError('Amount must be greater than 0');
+    if (averagePrice <= 0) return setError('Price must be greater than 0');
 
     setError(null);
     addAssetToPortfolio(portfolioId, {
@@ -180,6 +200,7 @@ export const usePortfolio = () => {
     });
   };
 
+  /* ── Exposed API ── */
   return {
     portfolios: portfoliosWithMetrics,
     activePortfolio: activePortfolioWithMetrics,
