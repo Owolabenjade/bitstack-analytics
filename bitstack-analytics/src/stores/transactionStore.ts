@@ -33,18 +33,18 @@ interface TransactionState {
 
 interface TransactionActions {
   addTransaction: (
-    transaction: Omit<Transaction, 'id' | 'timestamp'>
+    tx: Omit<Transaction, 'id' | 'timestamp'>,
   ) => string;
   updateTransactionStatus: (
     id: string,
     status: Transaction['status'],
-    error?: string
+    error?: string,
   ) => void;
   updateTransactionGas: (id: string, gasUsed: number, gasPrice: number) => void;
   removeTransaction: (id: string) => void;
   clearTransactions: () => void;
   setLoading: (loading: boolean) => void;
-  setError: (error: string | null) => void;
+  setError: (err: string | null) => void;
 }
 
 const initialState: TransactionState = {
@@ -58,46 +58,38 @@ export const useTransactionStore = create<
   TransactionState & TransactionActions
 >()(
   persist(
-    (set, get) => ({
+    (set) => ({
+      /* ------------------- state ------------------- */
       ...initialState,
 
-      addTransaction: (transactionData) => {
-        const transaction: Transaction = {
-          ...transactionData,
-          id: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      /* ------------------ actions ------------------ */
+      addTransaction: (data) => {
+        const tx: Transaction = {
+          ...data,
+          id: `tx_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
           timestamp: new Date(),
         };
 
         set((state) => ({
-          transactions: [transaction, ...state.transactions],
+          transactions: [tx, ...state.transactions],
           pendingCount:
-            transaction.status === 'pending'
+            tx.status === 'pending'
               ? state.pendingCount + 1
               : state.pendingCount,
         }));
 
-        return transaction.id;
+        return tx.id;
       },
 
       updateTransactionStatus: (id, status, error) => {
         set((state) => {
-          const updatedTransactions = state.transactions.map((tx) => {
-            if (tx.id === id) {
-              const waspending = tx.status === 'pending';
-              const nowPending = status === 'pending';
-
-              return { ...tx, status, error };
-            }
-            return tx;
-          });
-
-          const pendingCount = updatedTransactions.filter(
-            (tx) => tx.status === 'pending'
-          ).length;
+          const updated = state.transactions.map((tx) =>
+            tx.id === id ? { ...tx, status, error } : tx,
+          );
 
           return {
-            transactions: updatedTransactions,
-            pendingCount,
+            transactions: updated,
+            pendingCount: updated.filter((t) => t.status === 'pending').length,
           };
         });
       },
@@ -105,19 +97,19 @@ export const useTransactionStore = create<
       updateTransactionGas: (id, gasUsed, gasPrice) => {
         set((state) => ({
           transactions: state.transactions.map((tx) =>
-            tx.id === id ? { ...tx, gasUsed, gasPrice } : tx
+            tx.id === id ? { ...tx, gasUsed, gasPrice } : tx,
           ),
         }));
       },
 
       removeTransaction: (id) => {
-        set((state) => ({
-          transactions: state.transactions.filter((tx) => tx.id !== id),
-          pendingCount:
-            state.transactions.find((tx) => tx.id === id)?.status === 'pending'
-              ? state.pendingCount - 1
-              : state.pendingCount,
-        }));
+        set((state) => {
+          const remaining = state.transactions.filter((tx) => tx.id !== id);
+          return {
+            transactions: remaining,
+            pendingCount: remaining.filter((t) => t.status === 'pending').length,
+          };
+        });
       },
 
       clearTransactions: () => set(initialState),
@@ -127,9 +119,9 @@ export const useTransactionStore = create<
     {
       name: 'transaction-storage',
       partialize: (state) => ({
-        transactions: state.transactions,
+        transactions: state.transactions.slice(0, 50), // keep last 50
         pendingCount: state.pendingCount,
       }),
-    }
-  )
+    },
+  ),
 );

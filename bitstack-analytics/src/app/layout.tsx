@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Header } from '@/components/layout/Header';
@@ -12,9 +12,17 @@ export const metadata: Metadata = {
   description:
     'Cross-Chain Bitcoin Portfolio Analytics Dashboard built on Stacks',
   keywords: ['Bitcoin', 'Stacks', 'Portfolio', 'Analytics', 'DeFi'],
-  viewport: 'width=device-width, initial-scale=1',
-  themeColor: '#f97316',
   manifest: '/manifest.json',
+};
+
+/**
+ * Export viewport separately to avoid “viewport” & “themeColor” warnings.
+ * https://nextjs.org/docs/app/api-reference/functions/generate-metadata#viewport
+ */
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#f97316',
 };
 
 export default function RootLayout({
@@ -25,6 +33,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Pre-connects help fonts/APIs load faster */}
         <link rel="preconnect" href="https://api.coingecko.com" />
         <link rel="preconnect" href="https://api.coincap.io" />
         <link rel="preconnect" href="https://api.testnet.hiro.so" />
