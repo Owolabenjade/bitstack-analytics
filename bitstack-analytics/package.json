@@ -7,13 +7,12 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "lint:fix": "next lint --fix",
-    "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,md}\"",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
-    "prepare:commit": "npm run format && npm run lint"
+    "test:contracts": "clarinet test",
+    "prepare:commit": "npm run lint && npm run format && npm run test"
   },
   "dependencies": {
     "@stacks/auth": "^7.1.0",
