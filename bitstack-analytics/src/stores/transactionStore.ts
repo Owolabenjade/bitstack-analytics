@@ -32,13 +32,11 @@ interface TransactionState {
 }
 
 interface TransactionActions {
-  addTransaction: (
-    tx: Omit<Transaction, 'id' | 'timestamp'>,
-  ) => string;
+  addTransaction: (tx: Omit<Transaction, 'id' | 'timestamp'>) => string;
   updateTransactionStatus: (
     id: string,
     status: Transaction['status'],
-    error?: string,
+    error?: string
   ) => void;
   updateTransactionGas: (id: string, gasUsed: number, gasPrice: number) => void;
   removeTransaction: (id: string) => void;
@@ -84,7 +82,7 @@ export const useTransactionStore = create<
       updateTransactionStatus: (id, status, error) => {
         set((state) => {
           const updated = state.transactions.map((tx) =>
-            tx.id === id ? { ...tx, status, error } : tx,
+            tx.id === id ? { ...tx, status, error } : tx
           );
 
           return {
@@ -97,7 +95,7 @@ export const useTransactionStore = create<
       updateTransactionGas: (id, gasUsed, gasPrice) => {
         set((state) => ({
           transactions: state.transactions.map((tx) =>
-            tx.id === id ? { ...tx, gasUsed, gasPrice } : tx,
+            tx.id === id ? { ...tx, gasUsed, gasPrice } : tx
           ),
         }));
       },
@@ -107,7 +105,8 @@ export const useTransactionStore = create<
           const remaining = state.transactions.filter((tx) => tx.id !== id);
           return {
             transactions: remaining,
-            pendingCount: remaining.filter((t) => t.status === 'pending').length,
+            pendingCount: remaining.filter((t) => t.status === 'pending')
+              .length,
           };
         });
       },
@@ -122,6 +121,6 @@ export const useTransactionStore = create<
         transactions: state.transactions.slice(0, 50), // keep last 50
         pendingCount: state.pendingCount,
       }),
-    },
-  ),
+    }
+  )
 );

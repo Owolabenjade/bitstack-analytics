@@ -25,7 +25,8 @@ interface NavigatorWithConnection extends Navigator {
 
 export const useNetworkStatus = () => {
   // Guard against SSR: only touch window/navigator on the client
-  const isBrowser = typeof window !== 'undefined' && typeof navigator !== 'undefined';
+  const isBrowser =
+    typeof window !== 'undefined' && typeof navigator !== 'undefined';
 
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
     isOnline: isBrowser ? navigator.onLine : true,

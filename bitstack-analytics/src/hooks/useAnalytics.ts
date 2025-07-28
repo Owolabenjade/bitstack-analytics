@@ -36,7 +36,7 @@ export const useAnalytics = () => {
     portfolios.forEach((p) =>
       p.assets.forEach((a) => {
         set.add(a.coinId);
-      }),
+      })
     );
     return Array.from(set);
   }, [portfolios]);

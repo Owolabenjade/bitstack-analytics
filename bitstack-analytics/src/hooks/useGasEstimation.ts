@@ -20,19 +20,29 @@ export const useGasEstimation = () => {
       _contractAddress: string, // prefixed → suppress “unused” lint
       _contractName: string,
       functionName: string,
-      estimateId: string = 'default',
+      estimateId: string = 'default'
     ): Promise<GasEstimate> => {
       if (!address) {
         const err = 'Wallet not connected';
-        const estimate = { estimatedFee: 0, feeRate: 0, isLoading: false, error: err };
-        setEstimates(prev => ({ ...prev, [estimateId]: estimate }));
+        const estimate = {
+          estimatedFee: 0,
+          feeRate: 0,
+          isLoading: false,
+          error: err,
+        };
+        setEstimates((prev) => ({ ...prev, [estimateId]: estimate }));
         return estimate;
       }
 
       try {
-        setEstimates(prev => ({
+        setEstimates((prev) => ({
           ...prev,
-          [estimateId]: { estimatedFee: 0, feeRate: 0, isLoading: true, error: null },
+          [estimateId]: {
+            estimatedFee: 0,
+            feeRate: 0,
+            isLoading: true,
+            error: null,
+          },
         }));
 
         // Very rough gas model for demo purposes
@@ -41,18 +51,28 @@ export const useGasEstimation = () => {
         const estimatedGas = baseGas * complexity;
         const estimatedFee = estimatedGas * 1; // 1 µSTX / gas
 
-        const estimate = { estimatedFee, feeRate: 1, isLoading: false, error: null };
-        setEstimates(prev => ({ ...prev, [estimateId]: estimate }));
+        const estimate = {
+          estimatedFee,
+          feeRate: 1,
+          isLoading: false,
+          error: null,
+        };
+        setEstimates((prev) => ({ ...prev, [estimateId]: estimate }));
         return estimate;
       } catch (e) {
         console.error('Error estimating contract call fee:', e);
         const err = e instanceof Error ? e.message : 'Fee estimation failed';
-        const estimate = { estimatedFee: 0, feeRate: 0, isLoading: false, error: err };
-        setEstimates(prev => ({ ...prev, [estimateId]: estimate }));
+        const estimate = {
+          estimatedFee: 0,
+          feeRate: 0,
+          isLoading: false,
+          error: err,
+        };
+        setEstimates((prev) => ({ ...prev, [estimateId]: estimate }));
         return estimate;
       }
     },
-    [address],
+    [address]
   );
 
   /* ─────────────────────────────────────────────
@@ -61,34 +81,54 @@ export const useGasEstimation = () => {
   const estimateSTXTransfer = useCallback(
     async (
       _amount: number, // not used in the simple mock – prefix to silence lint
-      estimateId: string = 'stx-transfer',
+      estimateId: string = 'stx-transfer'
     ): Promise<GasEstimate> => {
       if (!address) {
         const err = 'Wallet not connected';
-        const estimate = { estimatedFee: 0, feeRate: 0, isLoading: false, error: err };
-        setEstimates(prev => ({ ...prev, [estimateId]: estimate }));
+        const estimate = {
+          estimatedFee: 0,
+          feeRate: 0,
+          isLoading: false,
+          error: err,
+        };
+        setEstimates((prev) => ({ ...prev, [estimateId]: estimate }));
         return estimate;
       }
 
       try {
-        setEstimates(prev => ({
+        setEstimates((prev) => ({
           ...prev,
-          [estimateId]: { estimatedFee: 0, feeRate: 0, isLoading: true, error: null },
+          [estimateId]: {
+            estimatedFee: 0,
+            feeRate: 0,
+            isLoading: true,
+            error: null,
+          },
         }));
 
         // Flat‑rate demo fee
-        const estimate = { estimatedFee: 1_000, feeRate: 1, isLoading: false, error: null };
-        setEstimates(prev => ({ ...prev, [estimateId]: estimate }));
+        const estimate = {
+          estimatedFee: 1_000,
+          feeRate: 1,
+          isLoading: false,
+          error: null,
+        };
+        setEstimates((prev) => ({ ...prev, [estimateId]: estimate }));
         return estimate;
       } catch (e) {
         console.error('Error estimating STX transfer fee:', e);
         const err = e instanceof Error ? e.message : 'Fee estimation failed';
-        const estimate = { estimatedFee: 0, feeRate: 0, isLoading: false, error: err };
-        setEstimates(prev => ({ ...prev, [estimateId]: estimate }));
+        const estimate = {
+          estimatedFee: 0,
+          feeRate: 0,
+          isLoading: false,
+          error: err,
+        };
+        setEstimates((prev) => ({ ...prev, [estimateId]: estimate }));
         return estimate;
       }
     },
-    [address],
+    [address]
   );
 
   /* ─────────────────────────────────────────────
@@ -96,11 +136,11 @@ export const useGasEstimation = () => {
    * ──────────────────────────────────────────── */
   const getEstimate = useCallback(
     (estimateId: string) => estimates[estimateId],
-    [estimates],
+    [estimates]
   );
 
   const clearEstimate = useCallback((estimateId: string) => {
-    setEstimates(prev => {
+    setEstimates((prev) => {
       const next = { ...prev };
       delete next[estimateId];
       return next;

@@ -34,7 +34,7 @@ export interface AssetWithMetrics extends PortfolioAsset {
  * ────────────────────────────── */
 const calculateAssetMetricsHelper = (
   asset: PortfolioAsset,
-  prices: Record<string, any>,
+  prices: Record<string, any>
 ): AssetWithMetrics => {
   const priceData = prices[asset.coinId];
   const currentPrice = priceData?.current_price ?? 0;
@@ -60,7 +60,7 @@ const calculateAssetMetricsHelper = (
 
 const calculatePortfolioMetricsHelper = (
   portfolio: Portfolio,
-  calcAssetMetrics: (asset: PortfolioAsset) => AssetWithMetrics,
+  calcAssetMetrics: (asset: PortfolioAsset) => AssetWithMetrics
 ): PortfolioMetrics => {
   if (!portfolio.assets.length) {
     return {
@@ -77,7 +77,7 @@ const calculatePortfolioMetricsHelper = (
 
   const totalValue = assetsWithMetrics.reduce(
     (sum, a) => sum + a.currentValue,
-    0,
+    0
   );
   const totalCost = assetsWithMetrics.reduce((sum, a) => sum + a.cost, 0);
   const totalPnL = totalValue - totalCost;
@@ -120,28 +120,28 @@ export const usePortfolio = () => {
 
   /* Active portfolio reference */
   const activePortfolio = useMemo(
-    () => portfolios.find(p => p.id === activePortfolioId) ?? null,
-    [portfolios, activePortfolioId],
+    () => portfolios.find((p) => p.id === activePortfolioId) ?? null,
+    [portfolios, activePortfolioId]
   );
 
   /* Memoised wrappers around the pure helpers */
   const calculateAssetMetrics = useCallback(
     (asset: PortfolioAsset): AssetWithMetrics =>
       calculateAssetMetricsHelper(asset, prices),
-    [prices],
+    [prices]
   );
 
   const calculatePortfolioMetrics = useCallback(
     (portfolio: Portfolio): PortfolioMetrics =>
       calculatePortfolioMetricsHelper(portfolio, calculateAssetMetrics),
-    [calculateAssetMetrics],
+    [calculateAssetMetrics]
   );
 
   const getPortfolioWithMetrics = useCallback(
     (portfolio: Portfolio) => {
       const metrics = calculatePortfolioMetrics(portfolio);
 
-      const assetsWithMetrics = portfolio.assets.map(asset => {
+      const assetsWithMetrics = portfolio.assets.map((asset) => {
         const assetMetrics = calculateAssetMetrics(asset);
         return {
           ...assetMetrics,
@@ -158,18 +158,18 @@ export const usePortfolio = () => {
         metrics,
       };
     },
-    [calculateAssetMetrics, calculatePortfolioMetrics],
+    [calculateAssetMetrics, calculatePortfolioMetrics]
   );
 
   /* ── Derived data ── */
   const activePortfolioWithMetrics = useMemo(
     () => (activePortfolio ? getPortfolioWithMetrics(activePortfolio) : null),
-    [activePortfolio, getPortfolioWithMetrics],
+    [activePortfolio, getPortfolioWithMetrics]
   );
 
   const portfoliosWithMetrics = useMemo(
     () => portfolios.map(getPortfolioWithMetrics),
-    [portfolios, getPortfolioWithMetrics],
+    [portfolios, getPortfolioWithMetrics]
   );
 
   /* ── CRUD helpers ── */
@@ -185,7 +185,7 @@ export const usePortfolio = () => {
     symbol: string,
     name: string,
     amount: number,
-    averagePrice: number,
+    averagePrice: number
   ) => {
     if (amount <= 0) return setError('Amount must be greater than 0');
     if (averagePrice <= 0) return setError('Price must be greater than 0');

@@ -41,31 +41,28 @@ export const useErrorHandler = () => {
 
   /** Remove a single error by id */
   const removeError = useCallback((errorId: string) => {
-    setErrors(prev => prev.filter(err => err.id !== errorId));
+    setErrors((prev) => prev.filter((err) => err.id !== errorId));
   }, []);
 
   /** Add a new error & optionally auto‑dismiss after 10 s */
-  const addError = useCallback(
-    (error: Omit<AppError, 'id' | 'timestamp'>) => {
-      const newError: AppError = {
-        ...error,
-        id: `error_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
-        timestamp: new Date(),
-      };
+  const addError = useCallback((error: Omit<AppError, 'id' | 'timestamp'>) => {
+    const newError: AppError = {
+      ...error,
+      id: `error_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
+      timestamp: new Date(),
+    };
 
-      setErrors(prev => [...prev, newError]);
+    setErrors((prev) => [...prev, newError]);
 
-      // Automatically clear non‑critical errors after 10 seconds
-      if (error.type !== 'authentication' && error.type !== 'blockchain') {
-        setTimeout(() => {
-          setErrors(prev => prev.filter(e => e.id !== newError.id));
-        }, 10_000);
-      }
+    // Automatically clear non‑critical errors after 10 seconds
+    if (error.type !== 'authentication' && error.type !== 'blockchain') {
+      setTimeout(() => {
+        setErrors((prev) => prev.filter((e) => e.id !== newError.id));
+      }, 10_000);
+    }
 
-      return newError.id;
-    },
-    [],
-  );
+    return newError.id;
+  }, []);
 
   /** Wipe the entire stack (e.g. on route change) */
   const clearAllErrors = useCallback(() => setErrors([]), []);
@@ -98,7 +95,7 @@ export const useErrorHandler = () => {
         retryable,
       });
     },
-    [addError],
+    [addError]
   );
 
   const handleValidationError = useCallback(
@@ -108,7 +105,7 @@ export const useErrorHandler = () => {
         type: 'validation',
         retryable: false,
       }),
-    [addError],
+    [addError]
   );
 
   const handleBlockchainError = useCallback(
@@ -134,26 +131,25 @@ export const useErrorHandler = () => {
         retryable,
       });
     },
-    [addError],
+    [addError]
   );
 
   const handleAuthenticationError = useCallback(
     (msg?: string) =>
       addError({
-        message:
-          msg ?? 'Authentication required. Please connect your wallet.',
+        message: msg ?? 'Authentication required. Please connect your wallet.',
         type: 'authentication',
         retryable: true,
       }),
-    [addError],
+    [addError]
   );
 
   /*──────────────  Selectors  ──────────────*/
 
   /** Filter errors by domain */
   const getErrorsByType = useCallback(
-    (type: AppError['type']) => errors.filter(err => err.type === type),
-    [errors],
+    (type: AppError['type']) => errors.filter((err) => err.type === type),
+    [errors]
   );
 
   /*──────────────  Derived helpers  ──────────────*/
