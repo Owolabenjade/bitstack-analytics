@@ -6,7 +6,6 @@ import { useErrorHandler } from '@/hooks/useErrorHandler';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { errorLogger } from '@/lib/utils/errorLogger';
 import {
-  Activity,
   AlertTriangle,
   Clock,
   Wifi,
@@ -14,7 +13,7 @@ import {
   Zap,
   BarChart3,
   X,
-} from 'lucide-react';
+} from 'lucide-react'; // Activity removed
 
 interface PerformanceDashboardProps {
   isOpen: boolean;
@@ -251,7 +250,9 @@ export const PerformanceDashboard = ({
               const url = URL.createObjectURL(blob);
               const a = document.createElement('a');
               a.href = url;
-              a.download = `performance-report-${new Date().toISOString().split('T')[0]}.json`;
+              a.download = `performance-report-${
+                new Date().toISOString().split('T')[0]
+              }.json`;
               document.body.appendChild(a);
               a.click();
               document.body.removeChild(a);
@@ -267,7 +268,8 @@ export const PerformanceDashboard = ({
   );
 };
 
-// Debug hotkey to open performance dashboard
+/* ---------- Debug hotkey to toggle dashboard ---------- */
+
 export const usePerformanceDebugHotkey = () => {
   const [isOpen, setIsOpen] = useState(false);
 

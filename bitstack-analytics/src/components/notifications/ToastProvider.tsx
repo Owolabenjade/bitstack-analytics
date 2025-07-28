@@ -49,9 +49,17 @@ export const ToastProvider = ({
 }: ToastProviderProps) => {
   const [toasts, setToasts] = useState<Toast[]>([]);
 
+  /* ----------------- core helpers ----------------- */
+
+  const removeToast = useCallback((id: string) => {
+    setToasts((prev) => prev.filter((toast) => toast.id !== id));
+  }, []);
+
   const addToast = useCallback(
     (toast: Omit<Toast, 'id'>) => {
-      const id = `toast_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const id = `toast_${Date.now()}_${Math.random()
+        .toString(36)
+        .substr(2, 9)}`;
       const newToast: Toast = { ...toast, id };
 
       setToasts((prev) => {
@@ -59,7 +67,7 @@ export const ToastProvider = ({
         return updated.slice(0, maxToasts);
       });
 
-      // Auto-remove toast after duration
+      // Auto-remove after duration
       const duration = toast.duration ?? (toast.type === 'error' ? 8000 : 5000);
       if (duration > 0) {
         setTimeout(() => removeToast(id), duration);
@@ -67,16 +75,14 @@ export const ToastProvider = ({
 
       return id;
     },
-    [maxToasts]
+    [maxToasts, removeToast] // ✅ include removeToast
   );
-
-  const removeToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((toast) => toast.id !== id));
-  }, []);
 
   const clearAllToasts = useCallback(() => {
     setToasts([]);
   }, []);
+
+  /* ----------------- provider ----------------- */
 
   return (
     <ToastContext.Provider
@@ -87,6 +93,8 @@ export const ToastProvider = ({
     </ToastContext.Provider>
   );
 };
+
+/* ----------------- UI components ----------------- */
 
 interface ToastContainerProps {
   toasts: Toast[];
@@ -168,13 +176,13 @@ const ToastItem = ({ toast, onRemove }: ToastItemProps) => {
   );
 };
 
-// Convenience hooks
+/* ----------------- convenience hooks ----------------- */
+
 export const useSuccessToast = () => {
   const { addToast } = useToast();
   return useCallback(
-    (message: string, title?: string) => {
-      return addToast({ type: 'success', message, title });
-    },
+    (message: string, title?: string) =>
+      addToast({ type: 'success', message, title }),
     [addToast]
   );
 };
@@ -182,9 +190,8 @@ export const useSuccessToast = () => {
 export const useErrorToast = () => {
   const { addToast } = useToast();
   return useCallback(
-    (message: string, title?: string) => {
-      return addToast({ type: 'error', message, title });
-    },
+    (message: string, title?: string) =>
+      addToast({ type: 'error', message, title }),
     [addToast]
   );
 };
@@ -192,9 +199,8 @@ export const useErrorToast = () => {
 export const useWarningToast = () => {
   const { addToast } = useToast();
   return useCallback(
-    (message: string, title?: string) => {
-      return addToast({ type: 'warning', message, title });
-    },
+    (message: string, title?: string) =>
+      addToast({ type: 'warning', message, title }),
     [addToast]
   );
 };
@@ -202,9 +208,8 @@ export const useWarningToast = () => {
 export const useInfoToast = () => {
   const { addToast } = useToast();
   return useCallback(
-    (message: string, title?: string) => {
-      return addToast({ type: 'info', message, title });
-    },
+    (message: string, title?: string) =>
+      addToast({ type: 'info', message, title }),
     [addToast]
   );
 };

@@ -8,6 +8,21 @@ interface NetworkStatus {
   rtt: number;
 }
 
+interface NavigatorConnection {
+  type?: string;
+  effectiveType?: string;
+  downlink?: number;
+  rtt?: number;
+  addEventListener?: (type: string, listener: EventListener) => void;
+  removeEventListener?: (type: string, listener: EventListener) => void;
+}
+
+interface NavigatorWithConnection extends Navigator {
+  connection?: NavigatorConnection;
+  mozConnection?: NavigatorConnection;
+  webkitConnection?: NavigatorConnection;
+}
+
 export const useNetworkStatus = () => {
   const [networkStatus, setNetworkStatus] = useState<NetworkStatus>({
     isOnline: navigator.onLine,
@@ -20,10 +35,11 @@ export const useNetworkStatus = () => {
   const [isSlowConnection, setIsSlowConnection] = useState(false);
 
   const updateNetworkStatus = useCallback(() => {
+    const navigator = window.navigator as NavigatorWithConnection;
     const connection =
-      (navigator as any).connection ||
-      (navigator as any).mozConnection ||
-      (navigator as any).webkitConnection;
+      navigator.connection ||
+      navigator.mozConnection ||
+      navigator.webkitConnection;
 
     const status: NetworkStatus = {
       isOnline: navigator.onLine,
@@ -53,7 +69,7 @@ export const useNetworkStatus = () => {
     window.addEventListener('online', handleOnline);
     window.addEventListener('offline', handleOffline);
 
-    const connection = (navigator as any).connection;
+    const connection = (navigator as NavigatorWithConnection).connection;
     if (connection) {
       connection.addEventListener('change', handleConnectionChange);
     }

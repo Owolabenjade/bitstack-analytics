@@ -5,7 +5,6 @@ import { useWallet } from '@/hooks/useWallet';
 import { useSettings } from '@/hooks/useSettings';
 import { TransactionStatus } from '@/components/contracts/TransactionStatus';
 import {
-  Settings,
   Database,
   Wallet,
   Bell,
@@ -112,7 +111,9 @@ export default function SettingsPage() {
                   <select
                     value={display.theme}
                     onChange={(e) =>
-                      updateDisplay({ theme: e.target.value as any })
+                      updateDisplay({
+                        theme: e.target.value as 'light' | 'dark' | 'system',
+                      })
                     }
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                   >
@@ -129,7 +130,9 @@ export default function SettingsPage() {
                   <select
                     value={display.currency}
                     onChange={(e) =>
-                      updateDisplay({ currency: e.target.value as any })
+                      updateDisplay({
+                        currency: e.target.value as 'USD' | 'BTC' | 'STX',
+                      })
                     }
                     className="w-full p-2 border border-gray-300 rounded-md focus:ring-orange-500 focus:border-orange-500"
                   >

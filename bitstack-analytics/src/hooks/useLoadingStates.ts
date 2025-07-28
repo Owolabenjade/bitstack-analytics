@@ -12,28 +12,7 @@ export const useLoadingStates = () => {
   >({});
   const timeoutRefs = useRef<Record<string, NodeJS.Timeout>>({});
 
-  const startLoading = useCallback(
-    (key: string, operation?: string, timeout?: number) => {
-      setLoadingStates((prev) => ({
-        ...prev,
-        [key]: {
-          isLoading: true,
-          startTime: Date.now(),
-          operation,
-        },
-      }));
-
-      // Auto-stop loading after timeout (default 30 seconds)
-      if (timeout !== 0) {
-        const timeoutDuration = timeout || 30000;
-        timeoutRefs.current[key] = setTimeout(() => {
-          stopLoading(key);
-        }, timeoutDuration);
-      }
-    },
-    []
-  );
-
+  /** Stop a loading state and clear its timeout (if any) */
   const stopLoading = useCallback((key: string) => {
     // Clear timeout if it exists
     if (timeoutRefs.current[key]) {
@@ -48,31 +27,50 @@ export const useLoadingStates = () => {
     });
   }, []);
 
-  const isLoading = useCallback(
-    (key: string) => {
-      return loadingStates[key]?.isLoading || false;
+  /** Start (or restart) a loading state, with optional auto-timeout */
+  const startLoading = useCallback(
+    (key: string, operation?: string, timeout?: number) => {
+      setLoadingStates((prev) => ({
+        ...prev,
+        [key]: {
+          isLoading: true,
+          startTime: Date.now(),
+          operation,
+        },
+      }));
+
+      // Auto-stop loading after timeout (default 30 s)
+      if (timeout !== 0) {
+        const timeoutDuration = timeout || 30000;
+        timeoutRefs.current[key] = setTimeout(() => {
+          stopLoading(key);
+        }, timeoutDuration);
+      }
     },
+    [stopLoading] // ✅ include stopLoading to satisfy hook-lint
+  );
+
+  const isLoading = useCallback(
+    (key: string) => loadingStates[key]?.isLoading ?? false,
     [loadingStates]
   );
 
   const getLoadingDuration = useCallback(
     (key: string) => {
       const state = loadingStates[key];
-      if (!state) return 0;
-      return Date.now() - state.startTime;
+      return state ? Date.now() - state.startTime : 0;
     },
     [loadingStates]
   );
 
   const getLoadingOperation = useCallback(
-    (key: string) => {
-      return loadingStates[key]?.operation;
-    },
+    (key: string) => loadingStates[key]?.operation,
     [loadingStates]
   );
 
   const isAnyLoading = Object.keys(loadingStates).length > 0;
 
+  /** Utility to wrap async ops with automatic loading handling */
   const withLoading = useCallback(
     async <T>(
       key: string,
@@ -91,11 +89,9 @@ export const useLoadingStates = () => {
     [startLoading, stopLoading]
   );
 
-  // Clean up timeouts on unmount
+  /** Clear all outstanding timeouts (e.g., on component unmount) */
   const cleanup = useCallback(() => {
-    Object.values(timeoutRefs.current).forEach((timeout) => {
-      clearTimeout(timeout);
-    });
+    Object.values(timeoutRefs.current).forEach(clearTimeout);
     timeoutRefs.current = {};
   }, []);
 

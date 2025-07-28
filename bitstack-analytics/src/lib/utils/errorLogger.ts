@@ -3,7 +3,7 @@ interface ErrorLogEntry {
   level: 'error' | 'warning' | 'info';
   message: string;
   error?: Error;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>; // ← stricter type
   userAgent?: string;
   url?: string;
   userId?: string;
@@ -11,32 +11,35 @@ interface ErrorLogEntry {
 
 class ErrorLogger {
   private logs: ErrorLogEntry[] = [];
-  private maxLogs: number = 100;
+  private maxLogs = 100;
+
+  /* -------------------------------------------------- */
+  /* Core logging                                        */
+  /* -------------------------------------------------- */
 
   log(entry: Omit<ErrorLogEntry, 'timestamp' | 'userAgent' | 'url'>) {
     const logEntry: ErrorLogEntry = {
       ...entry,
       timestamp: new Date(),
-      userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'server',
+      userAgent:
+        typeof window !== 'undefined' ? navigator.userAgent : 'server-side',
       url: typeof window !== 'undefined' ? window.location.href : 'unknown',
     };
 
     this.logs.unshift(logEntry);
-
-    // Keep only the most recent logs
     if (this.logs.length > this.maxLogs) {
-      this.logs = this.logs.slice(0, this.maxLogs);
+      this.logs.length = this.maxLogs;
     }
 
-    // Log to console in development
+    /* dev-console output -------------------------------- */
     if (process.env.NODE_ENV === 'development') {
-      const logLevel =
+      const level =
         entry.level === 'error'
           ? 'error'
           : entry.level === 'warning'
             ? 'warn'
             : 'log';
-      console[logLevel](
+      console[level](
         `[${entry.level.toUpperCase()}]`,
         entry.message,
         entry.error,
@@ -44,29 +47,30 @@ class ErrorLogger {
       );
     }
 
-    // In production, you might want to send to an error reporting service
+    /* production reporting ------------------------------ */
     if (process.env.NODE_ENV === 'production' && entry.level === 'error') {
       this.sendToErrorService(logEntry);
     }
   }
 
-  error(message: string, error?: Error, context?: Record<string, any>) {
+  error(message: string, error?: Error, context?: Record<string, unknown>) {
     this.log({ level: 'error', message, error, context });
   }
 
-  warning(message: string, context?: Record<string, any>) {
+  warning(message: string, context?: Record<string, unknown>) {
     this.log({ level: 'warning', message, context });
   }
 
-  info(message: string, context?: Record<string, any>) {
+  info(message: string, context?: Record<string, unknown>) {
     this.log({ level: 'info', message, context });
   }
 
-  getLogs(level?: 'error' | 'warning' | 'info'): ErrorLogEntry[] {
-    if (level) {
-      return this.logs.filter((log) => log.level === level);
-    }
-    return [...this.logs];
+  /* -------------------------------------------------- */
+  /* Utilities                                           */
+  /* -------------------------------------------------- */
+
+  getLogs(level?: ErrorLogEntry['level']): ErrorLogEntry[] {
+    return level ? this.logs.filter((l) => l.level === level) : [...this.logs];
   }
 
   clearLogs() {
@@ -77,49 +81,43 @@ class ErrorLogger {
     return JSON.stringify(this.logs, null, 2);
   }
 
-  private async sendToErrorService(logEntry: ErrorLogEntry) {
+  /* error stats for dashboards ------------------------- */
+  getErrorStats() {
+    const errors = this.getLogs('error');
+    const warnings = this.getLogs('warning');
+
+    return {
+      totalErrors: errors.length,
+      totalWarnings: warnings.length,
+      recentErrors: errors.slice(0, 5),
+      errorsByType: this.groupBy(errors, (l) => l.error?.name ?? 'Unknown'),
+      errorsLast24h: errors.filter(
+        (l) => Date.now() - l.timestamp.getTime() < 86_400_000
+      ).length,
+    };
+  }
+
+  /* -------------------------------------------------- */
+  /* Private helpers                                     */
+  /* -------------------------------------------------- */
+
+  private async sendToErrorService(_entry: ErrorLogEntry) {
     try {
-      // Example: Send to external service
-      // await fetch('/api/errors', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify(logEntry),
-      // });
+      // Example: send to external service
+      // await fetch('/api/errors', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(_entry) });
     } catch (err) {
       console.error('Failed to send error to logging service:', err);
     }
   }
 
-  // Get performance metrics for errors
-  getErrorStats() {
-    const errorLogs = this.getLogs('error');
-    const warningLogs = this.getLogs('warning');
-
-    return {
-      totalErrors: errorLogs.length,
-      totalWarnings: warningLogs.length,
-      recentErrors: errorLogs.slice(0, 5),
-      errorsByType: this.groupBy(
-        errorLogs,
-        (log) => log.error?.name || 'Unknown'
-      ),
-      errorsLast24h: errorLogs.filter(
-        (log) => Date.now() - log.timestamp.getTime() < 24 * 60 * 60 * 1000
-      ).length,
-    };
-  }
-
   private groupBy<T, K extends string | number>(
-    array: T[],
+    arr: T[],
     keyFn: (item: T) => K
   ): Record<K, T[]> {
-    return array.reduce(
+    return arr.reduce(
       (groups, item) => {
         const key = keyFn(item);
-        if (!groups[key]) {
-          groups[key] = [];
-        }
-        groups[key].push(item);
+        (groups[key] ??= []).push(item);
         return groups;
       },
       {} as Record<K, T[]>
@@ -129,19 +127,22 @@ class ErrorLogger {
 
 export const errorLogger = new ErrorLogger();
 
-// Global error handlers
+/* -------------------------------------------------- */
+/* Global browser handlers                             */
+/* -------------------------------------------------- */
+
 if (typeof window !== 'undefined') {
-  window.addEventListener('error', (event) => {
-    errorLogger.error('Global JavaScript Error', event.error, {
-      filename: event.filename,
-      lineno: event.lineno,
-      colno: event.colno,
+  window.addEventListener('error', (evt) => {
+    errorLogger.error('Global JavaScript Error', evt.error, {
+      filename: evt.filename,
+      lineno: evt.lineno,
+      colno: evt.colno,
     });
   });
 
-  window.addEventListener('unhandledrejection', (event) => {
-    errorLogger.error('Unhandled Promise Rejection', event.reason, {
-      promise: event.promise,
+  window.addEventListener('unhandledrejection', (evt) => {
+    errorLogger.error('Unhandled Promise Rejection', evt.reason as Error, {
+      promise: evt.promise,
     });
   });
 }

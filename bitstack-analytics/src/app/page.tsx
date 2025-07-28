@@ -38,8 +38,8 @@ export default function Home() {
               <div className="text-3xl mb-3">⚡</div>
               <h3 className="text-lg font-semibold mb-2">Stacks Integration</h3>
               <p className="text-gray-600">
-                Powered by Bitcoin's premier smart contract layer for security
-                and transparency
+                Powered by Bitcoin&apos;s premier smart contract layer for
+                security and transparency
               </p>
             </div>
           </div>

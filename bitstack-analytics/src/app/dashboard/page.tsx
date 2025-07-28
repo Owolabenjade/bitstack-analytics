@@ -4,7 +4,6 @@ import { Suspense, lazy } from 'react';
 import { usePerformanceMonitor } from '@/hooks/usePerformanceMonitor';
 import { useErrorHandler } from '@/hooks/useErrorHandler';
 import {
-  LoadingSkeleton,
   SkeletonCard,
   SkeletonChart,
 } from '@/components/loading/LoadingSkeleton';
@@ -22,7 +21,7 @@ const AllocationChart = lazy(
 
 function DashboardPage() {
   const { measureSync } = usePerformanceMonitor();
-  const { errors, handleNetworkError } = useErrorHandler();
+  const { errors } = useErrorHandler(); // Removed handleNetworkError usage
 
   const handleRetry = async () => {
     // Refresh page data

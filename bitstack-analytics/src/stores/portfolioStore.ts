@@ -1,6 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
+/* ------------------------------------------------------------------ */
+/* Types                                                               */
+/* ------------------------------------------------------------------ */
+
 export interface PortfolioAsset {
   id: string;
   coinId: string;
@@ -51,6 +55,10 @@ interface PortfolioActions {
   clearPortfolios: () => void;
 }
 
+/* ------------------------------------------------------------------ */
+/* Initial state                                                       */
+/* ------------------------------------------------------------------ */
+
 const initialState: PortfolioState = {
   portfolios: [],
   activePortfolioId: null,
@@ -58,14 +66,21 @@ const initialState: PortfolioState = {
   error: null,
 };
 
+/* ------------------------------------------------------------------ */
+/* Store                                                                */
+/* ------------------------------------------------------------------ */
+
 export const usePortfolioStore = create<PortfolioState & PortfolioActions>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       ...initialState,
 
+      /* ------------------- Portfolio CRUD ------------------------ */
       createPortfolio: (name, description) => {
         const portfolio: Portfolio = {
-          id: `portfolio_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+          id: `portfolio_${Date.now()}_${Math.random()
+            .toString(36)
+            .substr(2, 9)}`,
           name,
           description,
           assets: [],
@@ -79,20 +94,19 @@ export const usePortfolioStore = create<PortfolioState & PortfolioActions>()(
         }));
       },
 
-      deletePortfolio: (portfolioId) => {
+      deletePortfolio: (portfolioId) =>
         set((state) => ({
           portfolios: state.portfolios.filter((p) => p.id !== portfolioId),
           activePortfolioId:
             state.activePortfolioId === portfolioId
               ? null
               : state.activePortfolioId,
-        }));
-      },
+        })),
 
-      setActivePortfolio: (portfolioId) => {
-        set({ activePortfolioId: portfolioId });
-      },
+      setActivePortfolio: (portfolioId) =>
+        set({ activePortfolioId: portfolioId }),
 
+      /* ------------------- Asset helpers ------------------------ */
       addAssetToPortfolio: (portfolioId, assetData) => {
         const asset: PortfolioAsset = {
           ...assetData,
@@ -101,70 +115,62 @@ export const usePortfolioStore = create<PortfolioState & PortfolioActions>()(
         };
 
         set((state) => ({
-          portfolios: state.portfolios.map((portfolio) =>
-            portfolio.id === portfolioId
+          portfolios: state.portfolios.map((p) =>
+            p.id === portfolioId
               ? {
-                  ...portfolio,
-                  assets: [...portfolio.assets, asset],
+                  ...p,
+                  assets: [...p.assets, asset],
                   updatedAt: new Date(),
                 }
-              : portfolio
+              : p
           ),
         }));
       },
 
-      removeAssetFromPortfolio: (portfolioId, assetId) => {
+      removeAssetFromPortfolio: (portfolioId, assetId) =>
         set((state) => ({
-          portfolios: state.portfolios.map((portfolio) =>
-            portfolio.id === portfolioId
+          portfolios: state.portfolios.map((p) =>
+            p.id === portfolioId
               ? {
-                  ...portfolio,
-                  assets: portfolio.assets.filter(
-                    (asset) => asset.id !== assetId
+                  ...p,
+                  assets: p.assets.filter((a) => a.id !== assetId),
+                  updatedAt: new Date(),
+                }
+              : p
+          ),
+        })),
+
+      updateAssetAmount: (portfolioId, assetId, newAmount) =>
+        set((state) => ({
+          portfolios: state.portfolios.map((p) =>
+            p.id === portfolioId
+              ? {
+                  ...p,
+                  assets: p.assets.map((a) =>
+                    a.id === assetId ? { ...a, amount: newAmount } : a
                   ),
                   updatedAt: new Date(),
                 }
-              : portfolio
+              : p
           ),
-        }));
-      },
+        })),
 
-      updateAssetAmount: (portfolioId, assetId, newAmount) => {
+      updateAssetPrice: (portfolioId, assetId, newPrice) =>
         set((state) => ({
-          portfolios: state.portfolios.map((portfolio) =>
-            portfolio.id === portfolioId
+          portfolios: state.portfolios.map((p) =>
+            p.id === portfolioId
               ? {
-                  ...portfolio,
-                  assets: portfolio.assets.map((asset) =>
-                    asset.id === assetId
-                      ? { ...asset, amount: newAmount }
-                      : asset
+                  ...p,
+                  assets: p.assets.map((a) =>
+                    a.id === assetId ? { ...a, averagePrice: newPrice } : a
                   ),
                   updatedAt: new Date(),
                 }
-              : portfolio
+              : p
           ),
-        }));
-      },
+        })),
 
-      updateAssetPrice: (portfolioId, assetId, newPrice) => {
-        set((state) => ({
-          portfolios: state.portfolios.map((portfolio) =>
-            portfolio.id === portfolioId
-              ? {
-                  ...portfolio,
-                  assets: portfolio.assets.map((asset) =>
-                    asset.id === assetId
-                      ? { ...asset, averagePrice: newPrice }
-                      : asset
-                  ),
-                  updatedAt: new Date(),
-                }
-              : portfolio
-          ),
-        }));
-      },
-
+      /* ------------------- Misc helpers ------------------------- */
       setLoading: (isLoading) => set({ isLoading }),
       setError: (error) => set({ error }),
       clearPortfolios: () => set(initialState),

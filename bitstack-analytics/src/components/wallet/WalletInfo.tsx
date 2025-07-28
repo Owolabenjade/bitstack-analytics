@@ -19,7 +19,14 @@ export const WalletInfo = () => {
   const { estimates } = useGasEstimation();
   const [copiedField, setCopiedField] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('overview');
-  const [balance, setBalance] = useState<any>(null);
+  const [balance, setBalance] = useState<{
+    stx: {
+      balance: number;
+      locked: number;
+      totalSent: number;
+      totalReceived: number;
+    };
+  } | null>(null);
 
   useEffect(() => {
     if (address) {
@@ -36,7 +43,7 @@ export const WalletInfo = () => {
       await navigator.clipboard.writeText(text);
       setCopiedField(field);
       setTimeout(() => setCopiedField(null), 2000);
-    } catch (err) {
+    } catch {
       console.error('Failed to copy to clipboard');
     }
   };

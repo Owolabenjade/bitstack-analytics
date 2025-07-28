@@ -81,11 +81,14 @@ export const useTransactionHistory = () => {
     await fetchTransactions(false);
   }, [hasMore, loading, fetchTransactions]);
 
+  // Re-fetch when the connected address changes
   useEffect(() => {
     if (address) {
+      setOffset(0);
+      setHasMore(true);
       fetchTransactions(true);
     }
-  }, [address]);
+  }, [address]); // fetchTransactions removed from dependencies
 
   return {
     transactions,

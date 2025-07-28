@@ -8,7 +8,6 @@ import { AllocationChart } from '@/components/charts/AllocationChart';
 import { CorrelationMatrix } from '@/components/charts/CorrelationMatrix';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
 import {
-  TrendingUp,
   TrendingDown,
   RefreshCw,
   BarChart3,
@@ -80,7 +79,11 @@ export default function Analytics() {
           <div className="flex items-center space-x-4">
             <select
               value={selectedTimeframe}
-              onChange={(e) => setTimeframe(e.target.value as any)}
+              onChange={(e) =>
+                setTimeframe(
+                  e.target.value as '7d' | '30d' | '90d' | '1y' | 'all'
+                )
+              }
               className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-orange-500"
             >
               {timeframes.map((tf) => (

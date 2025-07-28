@@ -5,7 +5,7 @@ interface PerformanceMetric {
   startTime: number;
   endTime?: number;
   duration?: number;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 export const usePerformanceMonitor = () => {
@@ -13,7 +13,7 @@ export const usePerformanceMonitor = () => {
   const activeMetrics = useRef<Record<string, number>>({});
 
   const startMeasurement = useCallback(
-    (name: string, metadata?: Record<string, any>) => {
+    (name: string, metadata?: Record<string, unknown>) => {
       const startTime = performance.now();
       activeMetrics.current[name] = startTime;
 
@@ -61,7 +61,7 @@ export const usePerformanceMonitor = () => {
     async <T>(
       name: string,
       operation: () => Promise<T>,
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     ): Promise<T> => {
       startMeasurement(name, metadata);
       try {
@@ -78,7 +78,7 @@ export const usePerformanceMonitor = () => {
     <T>(
       name: string,
       operation: () => T,
-      metadata?: Record<string, any>
+      metadata?: Record<string, unknown>
     ): T => {
       startMeasurement(name, metadata);
       try {

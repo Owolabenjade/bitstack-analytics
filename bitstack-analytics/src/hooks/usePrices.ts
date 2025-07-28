@@ -15,7 +15,6 @@ export const usePrices = () => {
     error: storeError,
     lastUpdated,
     setPrices,
-    setLoading,
     setError,
   } = usePriceStore();
 

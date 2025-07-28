@@ -21,7 +21,7 @@ export const PerformanceChart = ({
   data,
   height = 300,
 }: PerformanceChartProps) => {
-  const formatTooltip = (value: any, name: string) => {
+  const formatTooltip = (value: number, name: string) => {
     if (name === 'value') {
       return [formatCurrency(value), 'Portfolio Value'];
     }

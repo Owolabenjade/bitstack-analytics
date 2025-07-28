@@ -35,7 +35,11 @@ export const AllocationChart = ({
   data,
   height = 300,
 }: AllocationChartProps) => {
-  const formatTooltip = (value: any, name: string, props: any) => {
+  const formatTooltip = (
+    value: number,
+    name: string,
+    props: { payload: AllocationData }
+  ) => {
     const { payload } = props;
     return [
       `${formatCurrency(payload.value)} (${formatPercentage(payload.allocation)})`,

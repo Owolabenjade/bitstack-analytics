@@ -39,7 +39,6 @@ export const usePortfolio = () => {
     removeAssetFromPortfolio,
     updateAssetAmount,
     updateAssetPrice,
-    setLoading,
     setError,
   } = usePortfolioStore();
 
@@ -114,6 +113,7 @@ export const usePortfolio = () => {
     };
   };
 
+  // Move getPortfolioWithMetrics outside of the component
   const getPortfolioWithMetrics = (portfolio: Portfolio) => {
     const metrics = calculatePortfolioMetrics(portfolio);
     const assetsWithMetrics = portfolio.assets.map((asset) => {

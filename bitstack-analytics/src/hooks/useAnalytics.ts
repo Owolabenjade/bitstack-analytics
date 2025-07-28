@@ -10,12 +10,8 @@ export const useAnalytics = () => {
     isLoading,
     error,
     selectedTimeframe,
-    setPerformanceData,
-    setCorrelationMatrix,
-    setMetrics,
     setTimeframe,
     setLoading,
-    setError,
     generateMockData,
   } = useAnalyticsStore();
 

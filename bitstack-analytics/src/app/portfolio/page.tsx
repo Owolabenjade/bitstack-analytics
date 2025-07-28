@@ -5,7 +5,7 @@ import { usePortfolio } from '@/hooks/usePortfolio';
 import { PortfolioList } from '@/components/portfolio/PortfolioList';
 import { AddAssetForm } from '@/components/portfolio/AddAssetForm';
 import { formatCurrency, formatPercentage } from '@/lib/utils';
-import { Plus, TrendingUp, TrendingDown, Trash2, Edit } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, Trash2 } from 'lucide-react';
 
 export default function Portfolio() {
   const [showAddAsset, setShowAddAsset] = useState(false);

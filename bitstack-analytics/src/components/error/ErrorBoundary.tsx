@@ -1,6 +1,7 @@
 'use client';
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
+import Link from 'next/link';
 import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface Props {
@@ -59,7 +60,8 @@ export class ErrorBoundary extends Component<Props, State> {
             </h1>
 
             <p className="text-gray-600 mb-6">
-              We apologize, but something unexpected happened. This error has been logged and we will look into it.
+              We apologize, but something unexpected happened. This error has
+              been logged and we will look into it.
             </p>
 
             {process.env.NODE_ENV === 'development' && this.state.error && (
@@ -67,8 +69,12 @@ export class ErrorBoundary extends Component<Props, State> {
                 <summary className="cursor-pointer text-sm font-medium text-gray-700 mb-2">
                   Error Details (Development Only)
                 </summary>
+
                 <div className="bg-gray-50 p-3 rounded text-xs font-mono overflow-auto max-h-32">
-                  <div className="text-red-600 mb-2">{this.state.error.message}</div>
+                  <div className="text-red-600 mb-2">
+                    {this.state.error.message}
+                  </div>
+
                   <div className="text-gray-600">{this.state.error.stack}</div>
                 </div>
               </details>
@@ -91,13 +97,13 @@ export class ErrorBoundary extends Component<Props, State> {
                 Refresh Page
               </button>
 
-              
+              <Link
                 href="/"
                 className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg transition-colors"
               >
                 <Home className="h-4 w-4" />
                 Go Home
-              </a>
+              </Link>
             </div>
           </div>
         </div>
